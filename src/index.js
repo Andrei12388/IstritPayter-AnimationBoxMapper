@@ -18,7 +18,7 @@ let isPlaying = true;
 
 const pushbox = [0,-50,30,30];
 const hurtbox = [[20,-50,30,30], [40,-50,30,30], [60,-50,30,30]];
-const hitbox = [0,50,0,0];
+const hitbox = [0,-500,0,0];
 
 
 const boxVisibility = {
@@ -143,21 +143,29 @@ resetBoxesBtn.textContent = 'Reset Boxes';
 controls.appendChild(resetBoxesBtn);
 
 resetBoxesBtn.onclick = () => {
+    unlockAllBoxes();
     const f = fighter.frames.get(frameKeyInput.value);
     if (!f) return;
 
-    // Ensure boxes exist, otherwise use defaults
-    f[1] = f[1]?.length === 4 ? f[1] : [...pushbox]; // push box
-    f[3] = f[3]?.length === 4 ? f[3] : [...hitbox];  // hit box
+    // Force reset
+    f[1] = [...pushbox]; // push box
+    f[3] = [...hitbox];  // hit box
 
     // hurt boxes
-    if (!Array.isArray(f[2])) f[2] = [];
-    f[2][0] = f[2][0]?.length === 4 ? f[2][0] : [...hurtbox[0]]; // head
-    f[2][1] = f[2][1]?.length === 4 ? f[2][1] : [...hurtbox[1]]; // body
-    f[2][2] = f[2][2]?.length === 4 ? f[2][2] : [...hurtbox[2]]; // feet
+    f[2] = [
+        [...hurtbox[0]], // head
+        [...hurtbox[1]], // body
+        [...hurtbox[2]]  // feet
+    ];
 
-    updateInputsFromFrame(fighter.animationFrame);
+    // Update input fields to match reset values
+    [pushXInput.value, pushYInput.value, pushWInput.value, pushHInput.value] = f[1];
+    [hitXInput.value, hitYInput.value, hitWInput.value, hitHInput.value] = f[3];
+    [hurtXInput.value, hurtYInput.value, hurtWInput.value, hurtHInput.value] = f[2][0];
+    [hurtBodyXInput.value, hurtBodyYInput.value, hurtBodyWInput.value, hurtBodyHInput.value] = f[2][1];
+    [hurtFeetXInput.value, hurtFeetYInput.value, hurtFeetWInput.value, hurtFeetHInput.value] = f[2][2];
 };
+
 
 
 
@@ -189,7 +197,7 @@ function initFighter(img) {
         image: img,
         frames: framesSelected,
         animations: animationSelected,
-        position: { x: canvas.width / 2, y: 220 },
+        position: { x: canvas.width / 2, y: 180 },
         direction: FighterDirection.RIGHT,
         state: FighterState.IDLE
     });
@@ -436,6 +444,10 @@ function unlockAllBoxes() {
     }
 }
 
+function drawFloor(){
+    ctx.fillStyle='violet';
+    ctx.fillRect(0,170,400,20);
+}
 
 function drawHandle(x,y){
     ctx.fillStyle='white';
@@ -509,10 +521,11 @@ function animate(t){
             fighter.lastFrameTime=t;
         }
     }
-
+    drawFloor();
     fighter.draw(ctx,camera);
     drawBoxes(frame);
     updateInputsFromFrame(fighter.animationFrame);
     drawText();
+    
     requestAnimationFrame(animate);
 }
