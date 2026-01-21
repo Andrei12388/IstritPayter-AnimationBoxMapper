@@ -2,11 +2,11 @@ import { FighterDebugRenderer } from "./imageMapper.js";
 import { FighterState, FighterDirection } from "./fighter.js";
 import { animationSelected, framesSelected, imageSelected } from "../InsertFrameHere.js";
 
-/* ==================== UTIL ==================== */
+
 const snap = v => Math.round(Number(v) || 0);
 const HANDLE_SIZE = 6;
 
-/* ==================== CANVAS ==================== */
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
@@ -16,7 +16,7 @@ const camera = { position: { x: 0, y: 0 } };
 let fighter;
 let isPlaying = true;
 
-/* ==================== STATE ==================== */
+
 const boxVisibility = {
     push: true,
     hit: true,
@@ -37,7 +37,6 @@ let draggingBox = null;
 let resizing = null;
 let dragOffset = { x: 0, y: 0 };
 
-/* ==================== INPUTS ==================== */
 const el = id => document.getElementById(id);
 
 const frameKeyInput = el('frameKey');
@@ -71,7 +70,7 @@ const nextFrameBtn = el('nextFrameBtn');
 const saveFramesBtn = el('saveFramesBtn');
 const currentFrameDisplay = el('currentFrameDisplay');
 
-/* ==================== PLAY CONTROLS ==================== */
+
 const controls = document.getElementById('debug-controls');
 ['Play','Pause','Stop'].forEach(name => {
     const b = document.createElement('button');
@@ -86,7 +85,7 @@ const controls = document.getElementById('debug-controls');
     };
 });
 
-/* ==================== VISIBILITY PANEL ==================== */
+
 const panel = document.createElement('div');
 panel.innerHTML = `
 <h4>Box Visibility / Lock</h4>
@@ -104,7 +103,7 @@ panel.querySelectorAll('[data-lock]').forEach(cb =>
     cb.onchange = e => boxLocked[e.target.dataset.lock] = e.target.checked
 );
 
-/* ==================== INIT ==================== */
+
 const image = imageSelected;
 if (!image) throw new Error("Image not found");
 image.onload = () => initFighter(image);
@@ -123,7 +122,6 @@ function initFighter(img) {
     animate();
 }
 
-/* ==================== SAVE & NEXT ==================== */
 saveFramesBtn.addEventListener('click', () => {
     const anim = fighter.animations[fighter.currentState];
     const lines = anim.map(([key]) => {
@@ -144,7 +142,6 @@ nextFrameBtn.addEventListener('click', () => {
     updateInputsFromFrame(fighter.animationFrame);
 });
 
-/* ==================== FRAME UPDATE ==================== */
 function updateInputsFromFrame(i) {
     const anim = fighter.animations[fighter.currentState];
     const key = anim[i][0];
@@ -162,7 +159,7 @@ function updateInputsFromFrame(i) {
     currentFrameDisplay.textContent = `Frame: ${key} (${i+1}/${anim.length})`;
 }
 
-/* ==================== INPUT SYNC ==================== */
+
 [
     pushXInput,pushYInput,pushWInput,pushHInput,
     hitXInput,hitYInput,hitWInput,hitHInput,
@@ -180,7 +177,7 @@ function updateInputsFromFrame(i) {
     f[2][2] = [snap(hurtFeetXInput.value),snap(hurtFeetYInput.value),snap(hurtFeetWInput.value),snap(hurtFeetHInput.value)];
 });
 
-/* ==================== RESIZE HANDLE ==================== */
+
 function getHandle(mx,my,x,y,w,h){
     const pts = { nw:[x,y], ne:[x+w,y], sw:[x,y+h], se:[x+w,y+h] };
     for (const k in pts){
@@ -191,7 +188,7 @@ function getHandle(mx,my,x,y,w,h){
     return null;
 }
 
-/* ==================== MOUSE ==================== */
+
 canvas.onmousedown = e => {
     const r = canvas.getBoundingClientRect();
     const sx = canvas.width / r.width;
@@ -270,7 +267,7 @@ canvas.onmouseup = canvas.onmouseleave = () => {
     resizing=null;
 };
 
-/* ==================== DRAW ==================== */
+
 function drawHandle(x,y){
     ctx.fillStyle='white';
     ctx.fillRect(x-HANDLE_SIZE/2,y-HANDLE_SIZE/2,HANDLE_SIZE,HANDLE_SIZE);
@@ -318,7 +315,7 @@ function drawText(){
             ctx.fillText("Animation Box Mapper by Robert Andrei Bardoquillo (2026)", canvas.width/12, 30);
 }
 
-/* ==================== LOOP ==================== */
+
 function animate(t){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
