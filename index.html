@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+   
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animation Box Mapper by Andrei</title>
+    <style>
+        html,
+body {
+  font-family: "Arcade Interlaced";
+  margin: 0;
+  padding: 0;
+
+  width: 100vw;
+  height: 100dvh; 
+
+  overflow: hidden;
+
+  background-color: rgb(0, 0, 1);
+
+  display: block;
+}
+main{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+        canvas {
+          transform: scale(1.5) translateY(50%);
+          background-color: rgb(0, 0, 0);
+
+          object-fit: contain;
+          image-rendering: crisp-edges;
+          image-rendering: pixelated;
+          position: absolute ;
+          z-index: 101;
+          width: 50vw;
+          height: 61vh;
+          margin-top: 30px;
+          border: solid 1px rgb(255, 255, 255);
+          border-radius: 5px;
+          font-family: "Arcade Interlaced";
+        }
+          img{
+            display: none;
+          }
+
+          #debug-controls{
+            display: block;
+            top: -5%;
+            position: absolute;
+            z-index: 1000;
+          }
+
+          legend{
+            font-family: Arial, Helvetica, sans-serif;
+            color: rgb(195, 255, 0);
+          }
+    
+       
+        
+    </style>
+    
+        <script defer type="module"src="./src/index.js"></script>
+  </head>
+  <body>
+    <main>
+      <canvas id="game" width="384" height="224"></canvas>
+
+      <div id="debug-controls">
+  <h3>Modify Frame Boxes</h3>
+
+  <label>Frame Key: <input type="text" id="frameKey" value="forwards-1"></label><br>
+
+  <fieldset>
+    <legend style="color: green;">Push Box</legend>
+    X: <input type="number" id="pushX" value="0">
+    Y: <input type="number" id="pushY" value="0">
+    W: <input type="number" id="pushW" value="0">
+    H: <input type="number" id="pushH" value="0">
+  </fieldset>
+
+  <fieldset>
+    <legend style="color: rgb(0, 221, 255);">Hurt Box (Head)</legend>
+    X: <input type="number" id="hurtX" value="0">
+    Y: <input type="number" id="hurtY" value="0">
+    W: <input type="number" id="hurtW" value="0">
+    H: <input type="number" id="hurtH" value="0">
+  </fieldset>
+  <fieldset>
+    <legend style="color: rgb(0, 221, 255);">Hurt Box (Body)</legend>
+    X: <input type="number" id="hurtBodyX" value="0">
+    Y: <input type="number" id="hurtBodyY" value="0">
+    W: <input type="number" id="hurtBodyW" value="0">
+    H: <input type="number" id="hurtBodyH" value="0">
+  </fieldset>
+  <fieldset>
+  <legend style="color: rgb(0, 221, 255);">Hurt Box (Feet)</legend>
+  X: <input type="number" id="hurtFeetX" value="0">
+  Y: <input type="number" id="hurtFeetY" value="0">
+  W: <input type="number" id="hurtFeetW" value="0">
+  H: <input type="number" id="hurtFeetH" value="0">
+</fieldset>
+
+<fieldset>
+    <legend style="color: red;">Hit Box</legend>
+    X: <input type="number" id="hitX" value="0">
+    Y: <input type="number" id="hitY" value="0">
+    W: <input type="number" id="hitW" value="0">
+    H: <input type="number" id="hitH" value="0">
+  </fieldset>
+
+  <button id="updateFrame">Update Frame</button>
+<button id="nextFrameBtn">Next Frame</button>
+<button id="saveFramesBtn">Save Frames to Text</button>
+
+</div>
+
+    
+  </main>
+
+  </div>
+    </div>
+    </div>
+    <img src="./src/images/golem.png" alt="golem" />
+   
+    
+
+  </body>
+
+
+</html>
+
