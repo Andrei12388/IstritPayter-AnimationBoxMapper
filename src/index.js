@@ -73,6 +73,8 @@ const updateBtn = el('updateFrame');
 const nextFrameBtn = el('nextFrameBtn');
 const saveFramesBtn = el('saveFramesBtn');
 const currentFrameDisplay = el('currentFrameDisplay');
+const lockMessages = {}; // { boxName: { timer: number, text: string } }
+
 
 
 const controls = document.getElementById('debug-controls');
@@ -80,14 +82,61 @@ const controls = document.getElementById('debug-controls');
     const b = document.createElement('button');
     b.textContent = name;
     controls.appendChild(b);
-    if (name === 'Play') b.onclick = () => isPlaying = true;
-    if (name === 'Pause') b.onclick = () => isPlaying = false;
+
+    if (name === 'Play') b.onclick = () => {
+        isPlaying = true;
+        unlockAllBoxes();
+    };
+    if (name === 'Pause') b.onclick = () => {
+        isPlaying = false;
+        unlockAllBoxes();
+    };
     if (name === 'Stop') b.onclick = () => {
         isPlaying = false;
         fighter.animationFrame = 0;
         updateInputsFromFrame(0);
+        unlockAllBoxes();
     };
 });
+
+const copyClipboardBtn = document.createElement('button');
+copyClipboardBtn.textContent = 'Copy Frames to Clipboard';
+controls.appendChild(copyClipboardBtn);
+
+copyClipboardBtn.onclick = async () => {
+    const anim = fighter.animations[fighter.currentState];
+
+    const lines = anim.map(([key]) => {
+        const frame = fighter.frames.get(key);
+        if (!frame) return '';
+
+        // Ensure defaults if undefined
+        const push = frame[1]?.length === 4 ? frame[1] : [...pushbox];
+        const hit = frame[3]?.length === 4 ? frame[3] : [...hitbox];
+
+        if (!Array.isArray(frame[2])) frame[2] = [];
+        const hurtHead = frame[2][0]?.length === 4 ? frame[2][0] : [...hurtbox[0]];
+        const hurtBody = frame[2][1]?.length === 4 ? frame[2][1] : [...hurtbox[1]];
+        const hurtFeet = frame[2][2]?.length === 4 ? frame[2][2] : [...hurtbox[2]];
+
+        const hurt = [hurtHead, hurtBody, hurtFeet];
+
+        // frame[0] = key, frame[1] = push, frame[2] = hurt, frame[3] = hit
+        // Keep original image data if exists
+        const imageData = frame[0] ? frame[0] : [[0,0,0,0],[0,0]];
+
+        return `['${key}', [${JSON.stringify(imageData)}, ${JSON.stringify(push)}, ${JSON.stringify(hurt)}, ${JSON.stringify(hit)}]]`;
+    }).filter(l => l !== '').join(',\n');
+
+    try {
+        await navigator.clipboard.writeText(lines);
+        alert('Frame data copied to clipboard!');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy to clipboard.');
+    }
+};
+
 
 const resetBoxesBtn = document.createElement('button');
 resetBoxesBtn.textContent = 'Reset Boxes';
@@ -97,16 +146,19 @@ resetBoxesBtn.onclick = () => {
     const f = fighter.frames.get(frameKeyInput.value);
     if (!f) return;
 
-    // Set push, hurt, and hit boxes to default
-    f[1] = [...pushbox];             // push box
-    f[3] = [...hitbox];              // hit box
-    f[2][0] = [...hurtbox[0]];      // hurt head
-    f[2][1] = [...hurtbox[1]];      // hurt body
-    f[2][2] = [...hurtbox[2]];      // hurt feet
+    // Ensure boxes exist, otherwise use defaults
+    f[1] = f[1]?.length === 4 ? f[1] : [...pushbox]; // push box
+    f[3] = f[3]?.length === 4 ? f[3] : [...hitbox];  // hit box
 
-    // Update the inputs so UI reflects new values
+    // hurt boxes
+    if (!Array.isArray(f[2])) f[2] = [];
+    f[2][0] = f[2][0]?.length === 4 ? f[2][0] : [...hurtbox[0]]; // head
+    f[2][1] = f[2][1]?.length === 4 ? f[2][1] : [...hurtbox[1]]; // body
+    f[2][2] = f[2][2]?.length === 4 ? f[2][2] : [...hurtbox[2]]; // feet
+
     updateInputsFromFrame(fighter.animationFrame);
 };
+
 
 
 const panel = document.createElement('div');
@@ -160,11 +212,11 @@ saveFramesBtn.addEventListener('click', () => {
 });
 
 nextFrameBtn.addEventListener('click', () => {
+    unlockAllBoxes();
     const anim = fighter.animations[fighter.currentState];
     fighter.animationFrame = (fighter.animationFrame + 1) % anim.length;
     updateInputsFromFrame(fighter.animationFrame);
 });
-
 function updateInputsFromFrame(i) {
     const anim = fighter.animations[fighter.currentState];
     const key = anim[i][0];
@@ -173,6 +225,16 @@ function updateInputsFromFrame(i) {
 
     frameKeyInput.value = key;
 
+    // Ensure boxes exist
+    f[1] = f[1]?.length === 4 ? f[1] : [...pushbox];
+    f[3] = f[3]?.length === 4 ? f[3] : [...hitbox];
+
+    if (!Array.isArray(f[2])) f[2] = [];
+    f[2][0] = f[2][0]?.length === 4 ? f[2][0] : [...hurtbox[0]];
+    f[2][1] = f[2][1]?.length === 4 ? f[2][1] : [...hurtbox[1]];
+    f[2][2] = f[2][2]?.length === 4 ? f[2][2] : [...hurtbox[2]];
+
+    // Update inputs
     [pushXInput.value, pushYInput.value, pushWInput.value, pushHInput.value] = f[1];
     [hitXInput.value, hitYInput.value, hitWInput.value, hitHInput.value] = f[3];
     [hurtXInput.value, hurtYInput.value, hurtWInput.value, hurtHInput.value] = f[2][0];
@@ -181,6 +243,7 @@ function updateInputsFromFrame(i) {
 
     currentFrameDisplay.textContent = `Frame: ${key} (${i+1}/${anim.length})`;
 }
+
 
 
 [
@@ -230,22 +293,36 @@ canvas.onmousedown = e => {
         hurtFeet: f[2][2],
     };
 
-    for (const k in boxes){
-        if (!boxVisibility[k] || boxLocked[k]) continue;
+    for (const k in boxes) {
+        if (!boxVisibility[k]) continue;
         const [x,y,w,h] = boxes[k];
         const bx = fighter.position.x + x;
         const by = fighter.position.y + y;
 
+        // Get handle for resizing
         const hnd = getHandle(mx,my,bx,by,w,h);
         if (hnd) return resizing={box:k,corner:hnd};
 
-        if (mx>=bx && mx<=bx+w && my>=by && my<=by+h){
-            draggingBox=k;
-            dragOffset={x:mx-bx,y:my-by};
+        // Ctrl-click toggle lock/unlock
+        if (e.ctrlKey && mx>=bx && mx<=bx+w && my>=by && my<=by+h) {
+            boxLocked[k] = !boxLocked[k];
+            const lockCheckbox = panel.querySelector(`[data-lock="${k}"]`);
+            if (lockCheckbox) lockCheckbox.checked = boxLocked[k];
+
+            // Temporary message
+            lockMessages[k] = { text: boxLocked[k] ? '🔒 Locked' : '🔓 Unlocked', timer: performance.now() + 1000 };
+            return; // stop further processing
+        }
+
+        // Normal dragging
+        if (!boxLocked[k] && mx>=bx && mx<=bx+w && my>=by && my<=by+h) {
+            draggingBox = k;
+            dragOffset = { x: mx - bx, y: my - by };
             return;
         }
     }
 };
+
 
 canvas.onmousemove = e => {
     if (!draggingBox && !resizing) return;
@@ -291,6 +368,75 @@ canvas.onmouseup = canvas.onmouseleave = () => {
 };
 
 
+
+canvas.onmouseup = canvas.onmouseleave = () => {
+    if (draggingBox && ctrlHeld) {
+        boxLocked[draggingBox] = true;
+
+        // Update panel checkbox
+        const lockCheckbox = panel.querySelector(`[data-lock="${draggingBox}"]`);
+        if (lockCheckbox) lockCheckbox.checked = true;
+
+        // Show temporary lock message for 1 second
+        
+    }
+
+    draggingBox = null;
+    resizing = null;
+};
+
+let ctrlHeld = false;
+let shiftHeld = false;
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Control') ctrlHeld = true;
+    if (e.key === 'Shift') shiftHeld = true;
+});
+
+document.addEventListener('keyup', e => {
+    if (e.key === 'Control') ctrlHeld = false;
+    if (e.key === 'Shift') shiftHeld = false;
+});
+
+
+
+canvas.onmouseup = canvas.onmouseleave = () => {
+    if (draggingBox) {
+        const lockCheckbox = panel.querySelector(`[data-lock="${draggingBox}"]`);
+
+        if (ctrlHeld && !shiftHeld) {
+            // Lock box
+            boxLocked[draggingBox] = true;
+            if (lockCheckbox) lockCheckbox.checked = true;
+          
+        } else if (ctrlHeld && shiftHeld) {
+            // Unlock box
+            boxLocked[draggingBox] = false;
+            if (lockCheckbox) lockCheckbox.checked = false;
+           
+        }
+    }
+
+    draggingBox = null;
+    resizing = null;
+};
+
+
+
+
+function unlockAllBoxes() {
+    for (const k in boxLocked) {
+        boxLocked[k] = false;
+
+        // Update the panel checkbox
+        const lockCheckbox = panel.querySelector(`[data-lock="${k}"]`);
+        if (lockCheckbox) lockCheckbox.checked = false;
+
+       
+    }
+}
+
+
 function drawHandle(x,y){
     ctx.fillStyle='white';
     ctx.fillRect(x-HANDLE_SIZE/2,y-HANDLE_SIZE/2,HANDLE_SIZE,HANDLE_SIZE);
@@ -300,36 +446,47 @@ function drawBoxes(frame) {
     if (!frame) return;
     const boxes = { push: frame[1], hit: frame[3], hurtHead: frame[2][0], hurtBody: frame[2][1], hurtFeet: frame[2][2] };
     for (const [name, box] of Object.entries(boxes)) {
+    if (!boxVisibility[name]) continue;
 
-        if (!boxVisibility[name]) continue;
+    const [x, y, w, h] = box;
+    const px = fighter.position.x + x;
+    const py = fighter.position.y + y;
 
-        const [x, y, w, h] = box;
-        const px = fighter.position.x + x;
-        const py = fighter.position.y + y;
+    const isActive = draggingBox === name || resizing?.box === name;
 
-        const isActive = draggingBox === name || resizing?.box === name;
+    ctx.strokeStyle = isActive ? 'yellow' :
+        name === 'push' ? 'green' : name === 'hit' ? 'red' : 'blue';
+    ctx.lineWidth = isActive ? 3 : 1;
+    ctx.strokeRect(px, py, w, h);
 
-        ctx.strokeStyle = isActive ? 'yellow' :
-            name === 'push' ? 'green' : name === 'hit' ? 'red' : 'blue';
-        ctx.lineWidth = isActive ? 3 : 1;
-        ctx.strokeRect(px, py, w, h);
+    if (!boxLocked[name]) {
+        drawHandle(px, py);
+        drawHandle(px + w, py);
+        drawHandle(px, py + h);
+        drawHandle(px + w, py + h);
+    } else {
+        ctx.fillStyle = 'white';
+        ctx.fillText('🔒', px + w - 10, py - 2);
+    }
 
-        if (!boxLocked[name]) {
-            drawHandle(px, py);
-            drawHandle(px + w, py);
-            drawHandle(px, py + h);
-            drawHandle(px + w, py + h);
-        } else {
-            ctx.fillStyle = 'white';
-            ctx.fillText('🔒', px + w - 10, py - 2);
-        }
-
-        if (boxVisibility[name]) { // show name only if visible
-            ctx.fillStyle = 'white';
+    // Draw temporary lock message if exists
+    if (lockMessages[name]) {
+        const now = performance.now();
+        if (now <= lockMessages[name].timer) {
+            ctx.fillStyle = 'yellow';
             ctx.font = '12px Arial';
-            ctx.fillText(name, px, py - 2);
+            ctx.fillText(lockMessages[name].text, px + w / 2 - 20, py - 12);
+        } else {
+            delete lockMessages[name]; // remove expired message
         }
     }
+
+    if (boxVisibility[name]) {
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.fillText(name, px, py - 2);
+    }
+}
 }
 
 function drawText(){
