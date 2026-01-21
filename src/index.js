@@ -16,6 +16,10 @@ const camera = { position: { x: 0, y: 0 } };
 let fighter;
 let isPlaying = true;
 
+const pushbox = [0,-50,30,30];
+const hurtbox = [[20,-50,30,30], [40,-50,30,30], [60,-50,30,30]];
+const hitbox = [0,50,0,0];
+
 
 const boxVisibility = {
     push: true,
@@ -84,6 +88,25 @@ const controls = document.getElementById('debug-controls');
         updateInputsFromFrame(0);
     };
 });
+
+const resetBoxesBtn = document.createElement('button');
+resetBoxesBtn.textContent = 'Reset Boxes';
+controls.appendChild(resetBoxesBtn);
+
+resetBoxesBtn.onclick = () => {
+    const f = fighter.frames.get(frameKeyInput.value);
+    if (!f) return;
+
+    // Set push, hurt, and hit boxes to default
+    f[1] = [...pushbox];             // push box
+    f[3] = [...hitbox];              // hit box
+    f[2][0] = [...hurtbox[0]];      // hurt head
+    f[2][1] = [...hurtbox[1]];      // hurt body
+    f[2][2] = [...hurtbox[2]];      // hurt feet
+
+    // Update the inputs so UI reflects new values
+    updateInputsFromFrame(fighter.animationFrame);
+};
 
 
 const panel = document.createElement('div');

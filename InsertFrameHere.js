@@ -12,9 +12,9 @@ export const framesSelected = new Map([
 
 export const animationSelected = {
         [FighterState.IDLE]: [
-            ['forwards-1', 85], ['forwards-2', 85],
-            ['forwards-3', 85], ['forwards-4', 85],
-            ['forwards-5', 85], 
+            ['forwards-1', 105], ['forwards-2', 105],
+            ['forwards-3', 105], ['forwards-4', 105],
+            ['forwards-5', 105], 
         ]
     };
 
