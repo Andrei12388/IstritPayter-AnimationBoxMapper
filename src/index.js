@@ -6,6 +6,12 @@ import { animationSelected, framesSelected, imageSelected } from "../InsertFrame
 const snap = v => Math.round(Number(v) || 0);
 const HANDLE_SIZE = 6;
 
+let fps = 0;
+let fpsFrames = 0;
+let fpsLastTime = 0;
+let fpsSmooth = 60;
+
+
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -106,13 +112,19 @@ controls.appendChild(copyClipboardBtn);
 copyClipboardBtn.onclick = async () => {
     const anim = fighter.animations[fighter.currentState];
 
-    const lines = anim.map(([key]) => {
-        const frame = fighter.frames.get(key);
-        if (!frame) return '';
+    const seen = new Set();
+    const lines = [];
 
-        // Ensure defaults if undefined
+    for (const [key] of anim) {
+        if (seen.has(key)) continue; // ✅ skip duplicates
+        seen.add(key);
+
+        const frame = fighter.frames.get(key);
+        if (!frame) continue;
+
+        // Defaults
         const push = frame[1]?.length === 4 ? frame[1] : [...pushbox];
-        const hit = frame[3]?.length === 4 ? frame[3] : [...hitbox];
+        const hit  = frame[3]?.length === 4 ? frame[3] : [...hitbox];
 
         if (!Array.isArray(frame[2])) frame[2] = [];
         const hurtHead = frame[2][0]?.length === 4 ? frame[2][0] : [...hurtbox[0]];
@@ -120,22 +132,22 @@ copyClipboardBtn.onclick = async () => {
         const hurtFeet = frame[2][2]?.length === 4 ? frame[2][2] : [...hurtbox[2]];
 
         const hurt = [hurtHead, hurtBody, hurtFeet];
+        const imageData = frame[0] ?? [[0,0,0,0],[0,0]];
 
-        // frame[0] = key, frame[1] = push, frame[2] = hurt, frame[3] = hit
-        // Keep original image data if exists
-        const imageData = frame[0] ? frame[0] : [[0,0,0,0],[0,0]];
-
-        return `['${key}', [${JSON.stringify(imageData)}, ${JSON.stringify(push)}, ${JSON.stringify(hurt)}, ${JSON.stringify(hit)}]]`;
-    }).filter(l => l !== '').join(',\n');
+        lines.push(
+            `['${key}', [${JSON.stringify(imageData)}, ${JSON.stringify(push)}, ${JSON.stringify(hurt)}, ${JSON.stringify(hit)}]]`
+        );
+    }
 
     try {
-        await navigator.clipboard.writeText(lines);
-        alert('Frame data copied to clipboard!');
+        await navigator.clipboard.writeText(lines.join(',\n'));
+        alert('Frame data copied (duplicates removed)!');
     } catch (err) {
-        console.error('Failed to copy:', err);
+        console.error(err);
         alert('Failed to copy to clipboard.');
     }
 };
+
 
 
 const resetBoxesBtn = document.createElement('button');
@@ -318,7 +330,7 @@ canvas.onmousedown = e => {
             if (lockCheckbox) lockCheckbox.checked = boxLocked[k];
 
             // Temporary message
-            lockMessages[k] = { text: boxLocked[k] ? '🔒 Locked' : '🔓 Unlocked', timer: performance.now() + 1000 };
+           
             return; // stop further processing
         }
 
@@ -501,6 +513,17 @@ function drawBoxes(frame) {
 }
 }
 
+
+
+function drawFPS() {
+    fpsSmooth = fpsSmooth * 0.9 + fps * 0.1;
+    ctx.fillStyle = 'lime';
+    ctx.font = '14px monospace';
+    ctx.fillText(`FPS: ${fpsSmooth.toFixed(1)}`, 10, 220);
+}
+
+
+
 function drawText(){
      ctx.fillStyle = 'white';
             ctx.font = '12px Arial';
@@ -509,6 +532,15 @@ function drawText(){
 
 
 function animate(t){
+    // FPS calculation
+fpsFrames++;
+
+if (t - fpsLastTime >= 1000) {
+    fps = fpsFrames;
+    fpsFrames = 0;
+    fpsLastTime = t;
+}
+
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     const anim = fighter.animations[fighter.currentState];
@@ -526,6 +558,7 @@ function animate(t){
     drawBoxes(frame);
     updateInputsFromFrame(fighter.animationFrame);
     drawText();
-    
+    drawFPS();
+
     requestAnimationFrame(animate);
 }
