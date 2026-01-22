@@ -1,6 +1,6 @@
 import { FighterDebugRenderer } from "./imageMapper.js";
 import { FighterState, FighterDirection } from "./fighter.js";
-import { animationSelected, framesSelected, imageSelected } from "../InsertFrameHere.js";
+import { animationSelected, framesSelected, imageSelected, toolState } from "../InsertFrameHere.js";
 
 
 const snap = v => Math.round(Number(v) || 0);
@@ -108,6 +108,29 @@ const controls = document.getElementById('debug-controls');
 const copyClipboardBtn = document.createElement('button');
 copyClipboardBtn.textContent = 'Copy Frames to Clipboard';
 controls.appendChild(copyClipboardBtn);
+
+const showBoxBtn = document.createElement('button');
+showBoxBtn.textContent = 'Toggle Show Box';
+controls.appendChild(showBoxBtn);
+
+showBoxBtn.onclick = async () => {
+    if(toolState.showBox){
+        boxVisibility.push = false;
+        boxVisibility.hit = false;
+        boxVisibility.hurtBody = false;
+        boxVisibility.hurtFeet = false;
+        boxVisibility.hurtHead = false;
+    } else {
+        boxVisibility.push = true;
+        boxVisibility.hit = true;
+        boxVisibility.hurtBody = true;
+        boxVisibility.hurtFeet = true;
+        boxVisibility.hurtHead = true;
+    }
+    toolState.showBox = !toolState.showBox;
+
+}
+
 
 copyClipboardBtn.onclick = async () => {
     const anim = fighter.animations[fighter.currentState];

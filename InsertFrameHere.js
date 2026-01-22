@@ -21,3 +21,7 @@ export const animationSelected = {
                         ['special1-1', FrameDelay.TRANSITION],
                     ],
     };
+
+export const toolState = {
+    showBox: true,
+}

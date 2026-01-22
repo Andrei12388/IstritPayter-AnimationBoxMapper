@@ -1,5 +1,6 @@
 import { FighterHurtBox } from "./fighter.js";
 import { FighterDirection } from "./fighter.js";
+import { toolState } from "../InsertFrameHere.js";
 
 /**
  * Lightweight fighter renderer for image mapping & debug visualization
@@ -157,6 +158,6 @@ export class FighterDebugRenderer {
 
         context.restore();
 
-        this.drawDebug(context, camera);
+      if(toolState.showBox) this.drawDebug(context, camera);
     }
 }
